@@ -1,131 +1,80 @@
-# ShiftIQ – Workforce Scheduling
+# Hướng dẫn Deploy lên Render
 
-Ứng dụng tối ưu lịch làm việc (HC Order) theo ngày, giờ, ca.
-
----
-
-## 🚀 Hướng dẫn Deploy lên Render.com (miễn phí)
-
-### Bước 1 — Tạo Google OAuth App
-
-1. Vào [https://console.cloud.google.com](https://console.cloud.google.com)
-2. Tạo project mới (hoặc dùng project có sẵn)
-3. **APIs & Services → OAuth consent screen**
-   - User type: External → Create
-   - Điền App name: `ShiftIQ`, email hỗ trợ → Save
-4. **APIs & Services → Credentials → Create Credentials → OAuth client ID**
-   - Application type: **Web application**
-   - Authorized redirect URIs: `https://TEN-APP-CUA-BAN.onrender.com/auth/google/callback`
-   - *(Điền tạm, cập nhật lại sau khi có URL Render)*
-5. Copy **Client ID** và **Client Secret** — dùng ở Bước 4
-
----
-
-### Bước 2 — Push lên GitHub
-
-```bash
-# Trong thư mục shiftiq/
-git init
-git add .
-git commit -m "Initial commit"
-git branch -M main
-git remote add origin https://github.com/USERNAME/shiftiq.git
-git push -u origin main
+## Cấu trúc file
+```
+quality-dashboard/
+├── index.html          ← Dashboard chính
+├── staff_template.csv  ← Template CSV nhân sự (tham khảo)
+└── README.md           ← File này
 ```
 
 ---
 
-### Bước 3 — Tạo Web Service trên Render
+## Deploy trên Render (Static Site) — Miễn phí
 
-1. Vào [https://render.com](https://render.com) → **New → Web Service**
-2. Kết nối GitHub repo `shiftiq`
-3. Cấu hình:
-   - **Name**: `shiftiq` (hoặc tên bạn muốn)
-   - **Runtime**: Node
-   - **Build Command**: `npm install`
-   - **Start Command**: `npm start`
-   - **Plan**: Free
-4. Bấm **Create Web Service** — Render sẽ deploy lần đầu
+### Bước 1: Tạo GitHub repo
+1. Vào https://github.com/new
+2. Tạo repo mới (ví dụ: `quality-dashboard`)
+3. Upload toàn bộ file trong thư mục này lên repo
 
-> URL app sẽ là: `https://shiftiq.onrender.com` (hoặc tên bạn đặt)
-
----
-
-### Bước 4 — Tạo PostgreSQL Database (miễn phí)
-
-1. Render Dashboard → **New → PostgreSQL**
-2. **Name**: `shiftiq-db`, **Plan**: Free → Create
-3. Sau khi tạo xong, vào **shiftiq-db → Info → Internal Database URL** → copy
+### Bước 2: Deploy trên Render
+1. Vào https://render.com → Đăng ký/Đăng nhập
+2. Click **"New +"** → chọn **"Static Site"**
+3. Kết nối GitHub repo vừa tạo
+4. Cấu hình:
+   - **Name**: quality-dashboard (hoặc tên bất kỳ)
+   - **Branch**: main
+   - **Root Directory**: *(để trống)*
+   - **Build Command**: *(để trống)*
+   - **Publish Directory**: `.` (dấu chấm)
+5. Click **"Create Static Site"**
+6. Đợi ~1-2 phút → nhận URL dạng `https://quality-dashboard-xxxx.onrender.com`
 
 ---
 
-### Bước 5 — Cấu hình Environment Variables
+## Cách sử dụng Dashboard
 
-Vào Web Service `shiftiq` → **Environment** → thêm các biến:
+### Cập nhật data (Module report)
+1. Export Google Sheets sheet **"For Slide"** → **File → Download → CSV**
+2. Trên dashboard, click nút **"Cập nhật data"** (góc trên phải)
+3. Chọn file CSV vừa download
+4. Dashboard tự động reload với data mới
 
-| Key | Value |
-|-----|-------|
-| `GOOGLE_CLIENT_ID` | Client ID từ Bước 1 |
-| `GOOGLE_CLIENT_SECRET` | Client Secret từ Bước 1 |
-| `GOOGLE_CALLBACK_URL` | `https://TEN-APP.onrender.com/auth/google/callback` |
-| `SESSION_SECRET` | Chuỗi ngẫu nhiên dài (vd: `shiftiq-abc123xyz456`) |
-| `OWNER_EMAIL` | Gmail của bạn (tài khoản owner) |
-| `DATABASE_URL` | Internal Database URL từ Bước 4 |
-
-Sau khi lưu, Render tự **redeploy**.
-
----
-
-### Bước 6 — Cập nhật Google OAuth Redirect URI
-
-Quay lại Google Cloud Console → Credentials → OAuth Client ID → chỉnh **Authorized redirect URIs** thành URL thật:
-```
-https://TEN-APP.onrender.com/auth/google/callback
-```
+### Xem báo cáo nhân sự
+1. Chuẩn bị file CSV theo format mẫu trong `staff_template.csv`
+   - Cột bắt buộc: `Agent Name`, `Module`, `QA Score`, `Total Errors`
+2. Vào trang **"Theo nhân sự"** (sidebar trái)
+3. Click **"Upload staff CSV"**
+4. Chọn file CSV nhân sự
 
 ---
 
-### ✅ Xong! Truy cập app
-
-```
-https://TEN-APP.onrender.com
-```
-
-Đăng nhập bằng Gmail đã đặt `OWNER_EMAIL` → role **OWNER**.
-
----
-
-## 💻 Chạy local (development)
-
-```bash
-npm install
-cp .env.example .env
-# Điền các giá trị vào .env
-node server.js
-# Mở http://localhost:3000
-```
+## Format CSV nhân sự (bắt buộc có các cột)
+| Cột | Bắt buộc | Mô tả |
+|-----|----------|-------|
+| Agent Name | ✅ | Tên nhân sự |
+| Module | ✅ | Tên module (Livestream, Listing, ...) |
+| Queue | ✅ | Tên queue |
+| Week | ✅ | Tuần (W21, W22, ...) |
+| QA Score | ✅ | Điểm QA (%) |
+| Total Errors | ✅ | Số lỗi |
+| Tenure/Newbie | | Loại nhân sự |
+| Notes | | Ghi chú |
 
 ---
 
-## 📁 Cấu trúc project
+## Kết nối Google Sheets (nâng cao)
 
-```
-shiftiq/
-├── public/
-│   ├── index.html      # Giao diện chính
-│   ├── app.js          # Logic frontend + optimizer
-│   └── style.css       # Styles
-├── server.js           # Express server + API + OAuth
-├── package.json
-├── render.yaml         # Render deploy config
-├── .env.example        # Template biến môi trường
-└── .gitignore
-```
+Nếu muốn dashboard tự động lấy data từ Sheets mà không cần upload CSV:
+
+1. Google Sheets → **File → Share → Publish to web**
+2. Chọn sheet → Format **CSV** → **Publish**
+3. Copy URL dạng: `https://docs.google.com/spreadsheets/d/.../pub?gid=...&single=true&output=csv`
+4. Trong `index.html`, tìm dòng `function triggerUpload()` và thêm fetch tự động
 
 ---
 
-## ⚠️ Lưu ý Free Tier Render
-
-- Web Service free sẽ **sleep sau 15 phút** không có request → lần đầu truy cập chậm ~30 giây
-- PostgreSQL free tồn tại **90 ngày** rồi bị xóa — export data định kỳ
-- Để tránh sleep: dùng [UptimeRobot](https://uptimerobot.com) ping URL mỗi 10 phút (miễn phí)
+## Lưu ý
+- Dashboard chạy hoàn toàn trên browser, không có backend → data không lưu trên server
+- Mỗi lần mở lại sẽ hiển thị data mẫu, cần upload lại CSV
+- Để lưu data lâu dài: có thể dùng Render + backend (Node.js) hoặc lưu lên Google Sheets
